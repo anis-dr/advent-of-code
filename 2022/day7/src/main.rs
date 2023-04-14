@@ -98,7 +98,8 @@ impl FileSystem {
     fn print(&self) {
         self.traverse(&self.root, 0);
     }
-
+    
+    #[allow(clippy::only_used_in_recursion)]
     fn filtered_sum(&self, node: &FileSystemNode, max_size: u64) -> u64 {
         match node {
             FileSystemNode::File { .. } => 0,
@@ -122,6 +123,7 @@ impl FileSystem {
         self.filtered_sum(&self.root, max_size)
     }
 
+    #[allow(clippy::only_used_in_recursion)]
     fn find_smallest_directory(
         &self,
         node: &FileSystemNode,
@@ -129,7 +131,7 @@ impl FileSystem {
     ) -> Option<(String, u64)> {
         match node {
             FileSystemNode::File { .. } => None,
-            FileSystemNode::Directory { name, children } => {
+            FileSystemNode::Directory { children, .. } => {
                 let mut smallest_directory: Option<(String, u64)> = None;
 
                 for child in children.values() {
@@ -203,7 +205,7 @@ fn main() {
                 // Check if the command is to go up one directory ($ cd ..)
                 if dirname == ".." {
                     // Remove the last part of the path (go up one directory)
-                    let mut path_components = current_path.split("/").collect::<Vec<_>>();
+                    let mut path_components = current_path.split('/').collect::<Vec<_>>();
                     path_components.pop();
                     current_path = path_components.join("/");
                 } else {
@@ -231,7 +233,10 @@ fn main() {
     if let Some((smallest_dir, size)) =
         tree.find_smallest_directory(&tree.root, additional_space_needed)
     {
-        println!("Smallest directory to delete: {} size: {}", smallest_dir, size);
+        println!(
+            "Smallest directory to delete: {} size: {}",
+            smallest_dir, size
+        );
     } else {
         println!("No directory can be deleted to free up enough space.");
     }
