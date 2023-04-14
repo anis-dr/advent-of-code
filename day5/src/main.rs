@@ -26,13 +26,12 @@ struct Stack<'a> {
 }
 
 impl Cargo<'_> {
-    fn move_crate(&mut self) {
+    fn move_crates(&mut self) {
         for Move { count, from, to } in self.moves.iter() {
             let len = self.stacks[*from as usize].crates.len();
             let drained = self.stacks[*from as usize]
                 .crates
                 .drain((len - *count as usize)..)
-                .rev()
                 .collect::<Vec<&str>>();
             for c in drained.iter() {
                 self.stacks[*to as usize].crates.push(c);
@@ -108,7 +107,7 @@ fn main() {
     let input = std::fs::read_to_string("input.txt").unwrap();
     let (_, mut cargo) = parse_cargo(input.as_str()).unwrap();
 
-    cargo.move_crate();
+    cargo.move_crates();
 
     // get the top crate of each stack
     let mut top_crates = vec![];
@@ -118,10 +117,12 @@ fn main() {
         }
     }
 
+    // Collect the top crates into a string
     let top_crates = top_crates
         .iter()
         .map(|c| c.to_string())
-        .collect::<Vec<String>>();
+        .collect::<Vec<String>>()
+        .join("");
 
-    println!("{:?}", top_crates.join(""));
+    println!("{:?}", top_crates);
 }
