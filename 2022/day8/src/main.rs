@@ -52,40 +52,34 @@ fn view_distance(grid: &Vec<Vec<u32>>, row: usize, col: usize) -> usize {
     let tree = grid[row][col];
 
     // left
-    let mut left_distance = 0;
-    for c in (0..col).rev() {
-        left_distance += 1;
-        if grid[row][c] >= tree {
-            break;
-        }
-    }
+    let left_distance = (0..col)
+        .rev()
+        .map(|c| grid[row][c])
+        .take_while(|&cell| cell < tree)
+        .count();
 
     // right
-    let mut right_distance = 0;
-    for c in col + 1..cols {
-        right_distance += 1;
-        if grid[row][c] >= tree {
-            break;
-        }
-    }
+    let right_distance = (col + 1..cols)
+        .map(|c| grid[row][c])
+        .take_while(|&cell| cell < tree)
+        .count();
 
     // up
-    let mut up_distance = 0;
-    for r in (0..row).rev() {
-        up_distance += 1;
-        if grid[r][col] >= tree {
-            break;
-        }
-    }
+    let up_distance = (0..row)
+        .rev()
+        .map(|r| grid[r][col])
+        .take_while(|&cell| cell < tree)
+        .count();
 
     // down
-    let mut down_distance = 0;
-    for r in row + 1..rows {
-        down_distance += 1;
-        if grid[r][col] >= tree {
-            break;
-        }
-    }
+    let down_distance = if row == rows - 1 {
+        0
+    } else {
+        (row + 1..rows)
+            .map(|r| grid[r][col])
+            .take_while(|&cell| cell < tree)
+            .count() + 1
+    };
 
     // return the multiplication of the distances
     left_distance * right_distance * up_distance * down_distance
