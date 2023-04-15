@@ -36,22 +36,10 @@ impl FileSystemNode {
             }
         }
     }
-}
-
-struct FileSystem {
-    root: FileSystemNode,
-}
-
-impl FileSystem {
-    fn new() -> Self {
-        FileSystem {
-            root: FileSystemNode::new_directory("/"),
-        }
-    }
 
     fn add_node(&mut self, path: &str, node: FileSystemNode) {
         let path = Path::new(path);
-        let mut current_node = &mut self.root;
+        let mut current_node = self;
 
         for component in path.components().skip(1) {
             if let Some(component_str) = component.as_os_str().to_str() {
@@ -74,34 +62,8 @@ impl FileSystem {
         }
     }
 
-    #[allow(clippy::only_used_in_recursion)]
-    fn traverse(&self, node: &FileSystemNode, depth: usize) {
-        match node {
-            FileSystemNode::File { name, size } => {
-                println!(
-                    "{:indent$}- {} (file, size={})",
-                    "",
-                    name,
-                    size,
-                    indent = depth * 2
-                );
-            }
-            FileSystemNode::Directory { name, children } => {
-                println!("{:indent$}- {} (dir)", "", name, indent = depth * 2);
-                for child in children.values() {
-                    self.traverse(child, depth + 2);
-                }
-            }
-        }
-    }
-
-    fn print(&self) {
-        self.traverse(&self.root, 0);
-    }
-    
-    #[allow(clippy::only_used_in_recursion)]
-    fn filtered_sum(&self, node: &FileSystemNode, max_size: u64) -> u64 {
-        match node {
+    fn filtered_sum(&self, max_size: u64) -> u64 {
+        match self {
             FileSystemNode::File { .. } => 0,
             FileSystemNode::Directory { children, .. } => {
                 let mut sum = 0;
@@ -112,7 +74,7 @@ impl FileSystem {
                             sum += child_size;
                         }
                     }
-                    sum += self.filtered_sum(child, max_size);
+                    sum += child.filtered_sum(max_size);
                 }
                 sum
             }
@@ -120,16 +82,11 @@ impl FileSystem {
     }
 
     fn find_sum_of_dirs_with_max_size(&self, max_size: u64) -> u64 {
-        self.filtered_sum(&self.root, max_size)
+        self.filtered_sum(max_size)
     }
 
-    #[allow(clippy::only_used_in_recursion)]
-    fn find_smallest_directory(
-        &self,
-        node: &FileSystemNode,
-        min_size: u64,
-    ) -> Option<(String, u64)> {
-        match node {
+    fn find_smallest_directory(&self, min_size: u64) -> Option<(String, u64)> {
+        match self {
             FileSystemNode::File { .. } => None,
             FileSystemNode::Directory { children, .. } => {
                 let mut smallest_directory: Option<(String, u64)> = None;
@@ -148,8 +105,7 @@ impl FileSystem {
                         }
                     }
 
-                    if let Some((child_name, child_size)) =
-                        self.find_smallest_directory(child, min_size)
+                    if let Some((child_name, child_size)) = child.find_smallest_directory(min_size)
                     {
                         if let Some((_, smallest_size)) = smallest_directory {
                             if child_size < smallest_size {
@@ -168,7 +124,7 @@ impl FileSystem {
 }
 
 fn main() {
-    let mut tree = FileSystem::new();
+    let mut root = FileSystemNode::new_directory("/");
 
     // Read the input file line by line
     let input = read_to_string("input.txt").unwrap();
@@ -188,12 +144,12 @@ fn main() {
                 let parts = line.split_whitespace().collect::<Vec<_>>();
                 let size = parts[0].parse::<u64>().unwrap();
                 let name = parts[1];
-                tree.add_node(current_path.as_str(), FileSystemNode::new_file(name, size));
+                root.add_node(current_path.as_str(), FileSystemNode::new_file(name, size));
             }
             // If the line starts with "dir", it's a directory
             line if line.starts_with("dir") => {
                 let dirname = line.split_whitespace().collect::<Vec<_>>()[1];
-                tree.add_node(
+                root.add_node(
                     current_path.as_str(),
                     FileSystemNode::new_directory(dirname),
                 );
@@ -205,7 +161,7 @@ fn main() {
                 // Check if the command is to go up one directory ($ cd ..)
                 if dirname == ".." {
                     // Remove the last part of the path (go up one directory)
-                    let mut path_components = current_path.split('/').collect::<Vec<_>>();
+                    let mut path_components = current_path.split("/").collect::<Vec<_>>();
                     path_components.pop();
                     current_path = path_components.join("/");
                 } else {
@@ -217,22 +173,18 @@ fn main() {
         }
     }
 
-    tree.print();
-
     println!(
         "Sum of directories with size <= 100000: {}",
-        tree.find_sum_of_dirs_with_max_size(100000)
+        root.find_sum_of_dirs_with_max_size(100000)
     );
 
     let total_disk_space = 70_000_000;
     let required_unused_space = 30_000_000;
-    let used_space = tree.root.dir_size();
+    let used_space = root.dir_size();
     let current_unused_space = total_disk_space - used_space;
     let additional_space_needed = required_unused_space - current_unused_space;
 
-    if let Some((smallest_dir, size)) =
-        tree.find_smallest_directory(&tree.root, additional_space_needed)
-    {
+    if let Some((smallest_dir, size)) = root.find_smallest_directory(additional_space_needed) {
         println!(
             "Smallest directory to delete: {} size: {}",
             smallest_dir, size
