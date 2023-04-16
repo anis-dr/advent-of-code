@@ -70,16 +70,28 @@ fn main() {
         })
         .collect();
 
-    let mut knots = vec![Point2D::new(0, 0); 10];
-    // Create new hashmap for visited tail positions
+    // part 1
+    let knots = vec![Point2D::new(0, 0); 2];
+    let visited = simulate_rope(&moves, knots);
+    println!("Tail visited {} positions", visited.len());
+
+    // part 2
+    let knots = vec![Point2D::new(0, 0); 10];
+    let visited = simulate_rope(&moves, knots);
+    println!("Tail visited {} positions", visited.len());
+}
+
+fn simulate_rope(moves: &Vec<Move>, mut knots: Vec<Point2D>) -> HashSet<Point2D> {
     let mut visited: HashSet<Point2D> = HashSet::new();
-    visited.insert(Point2D::new(0, 0));
 
     for move_ in moves {
         for _ in 0..move_.distance {
             let delta = Point2D::from(move_.direction);
             knots[0].step(delta);
 
+            // Cat and mouse game with the tail.
+            // The tail is always one step behind the head.
+            // In other words knots[i] is always one step behind knots[i - 1].
             for i in 1..knots.len() {
                 if !knots[i].is_touching(knots[i - 1]) {
                     let delta = knots[i].get_delta_to(knots[i - 1]);
@@ -91,5 +103,5 @@ fn main() {
         }
     }
 
-    println!("Visited: {:?}", visited.len());
+    visited
 }
