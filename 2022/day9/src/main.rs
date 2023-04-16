@@ -56,7 +56,7 @@ impl Point2D {
 }
 
 fn main() {
-    let path = "test.txt";
+    let path = "input.txt";
     let input = read_to_string(path).unwrap();
 
     let moves: Vec<Move> = input
@@ -70,8 +70,7 @@ fn main() {
         })
         .collect();
 
-    let mut head = Point2D::new(0, 0);
-    let mut tail = Point2D::new(0, 0);
+    let mut knots = vec![Point2D::new(0, 0); 10];
     // Create new hashmap for visited tail positions
     let mut visited: HashSet<Point2D> = HashSet::new();
     visited.insert(Point2D::new(0, 0));
@@ -79,12 +78,16 @@ fn main() {
     for move_ in moves {
         for _ in 0..move_.distance {
             let delta = Point2D::from(move_.direction);
-            head.step(delta);
-            if !head.is_touching(tail) {
-                let delta = tail.get_delta_to(head);
-                tail.step(delta);
-                visited.insert(tail);
+            knots[0].step(delta);
+
+            for i in 1..knots.len() {
+                if !knots[i].is_touching(knots[i - 1]) {
+                    let delta = knots[i].get_delta_to(knots[i - 1]);
+                    knots[i].step(delta);
+                }
             }
+
+            visited.insert(knots[knots.len() - 1]);
         }
     }
 
