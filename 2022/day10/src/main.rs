@@ -89,8 +89,12 @@ fn simulate_cpu(path: &Path) {
 
     // Execute each instruction in the list
     for instruction in instructions.iter() {
+        // Set the current instruction in the CPU
         cpu.current_instruction = Some(*instruction);
+
+        // Execute the current instruction
         while cpu.current_instruction.is_some() {
+            // Increment the global cycle counter
             global_cycle_counter += 1;
 
             // Check if a signal needs to be modified
