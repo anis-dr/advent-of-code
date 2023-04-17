@@ -1,44 +1,48 @@
 use std::{fs::read_to_string, path::Path};
 
+// Define the possible instructions
 #[derive(Clone, Copy, Debug)]
 enum Instruction {
     Noop { cycles: u32 },
     AddX { value: i32, cycles: u32 },
 }
 
+// Define the CPU structure
 #[allow(clippy::upper_case_acronyms)]
 #[derive(Debug)]
 struct CPU {
     x: i32,
-    program_counter: Option<Instruction>,
+    current_instruction: Option<Instruction>,
 }
 
 impl CPU {
+    // Initialize the CPU
     fn new() -> Self {
         Self {
             x: 1,
-            program_counter: None,
+            current_instruction: None,
         }
     }
 
+    // Execute the current instruction
     fn execute(&mut self) {
-        if let Some(instruction) = self.program_counter {
+        if let Some(instruction) = self.current_instruction {
             match instruction {
                 Instruction::Noop { mut cycles } => {
                     cycles -= 1;
                     if cycles == 0 {
-                        self.program_counter = None;
+                        self.current_instruction = None;
                     } else {
-                        self.program_counter = Some(Instruction::Noop { cycles });
+                        self.current_instruction = Some(Instruction::Noop { cycles });
                     }
                 }
                 Instruction::AddX { mut cycles, value } => {
                     cycles -= 1;
                     if cycles == 0 {
                         self.x += value;
-                        self.program_counter = None;
+                        self.current_instruction = None;
                     } else {
-                        self.program_counter = Some(Instruction::AddX { cycles, value });
+                        self.current_instruction = Some(Instruction::AddX { cycles, value });
                     }
                 }
             }
@@ -48,13 +52,9 @@ impl CPU {
     }
 }
 
-fn simulate_cpu(path: &Path) {
-    println!("----------------------------------");
-    println!("Simulating CPU with instructions from {}", path.display());
-
-    let input = read_to_string(path).unwrap();
-
-    let instructions: Vec<Instruction> = input
+// Parse instructions from the input file
+fn parse_instructions(input: &str) -> Vec<Instruction> {
+    input
         .lines()
         .map(|line| {
             let mut parts = line.split_whitespace();
@@ -69,20 +69,31 @@ fn simulate_cpu(path: &Path) {
                 panic!("Unknown instruction: {}", instruction);
             }
         })
-        .collect();
+        .collect()
+}
 
+// Run the CPU simulation
+fn simulate_cpu(path: &Path) {
+    println!("----------------------------------");
+    println!("Simulating CPU with instructions from {}", path.display());
+
+    // Read input from the file and parse the instructions
+    let input = read_to_string(path).unwrap();
+    let instructions = parse_instructions(&input);
+
+    // Initialize the CPU
     let mut cpu = CPU::new();
-
     let mut global_cycle_counter = 0;
     let mut signal_strengths = [20, 60, 100, 140, 180, 220];
     let mut signal_index = 0;
 
-    let instruction_iter = instructions.iter();
-    for instruction in instruction_iter {
-        cpu.program_counter = Some(*instruction);
-        while cpu.program_counter.is_some() {
+    // Execute each instruction in the list
+    for instruction in instructions.iter() {
+        cpu.current_instruction = Some(*instruction);
+        while cpu.current_instruction.is_some() {
             global_cycle_counter += 1;
 
+            // Check if a signal needs to be modified
             if signal_index < signal_strengths.len()
                 && global_cycle_counter == signal_strengths[signal_index]
             {
@@ -91,10 +102,12 @@ fn simulate_cpu(path: &Path) {
                 signal_index += 1;
             }
 
+            // Execute the current instruction
             cpu.execute();
         }
     }
 
+    // Calculate and display the sum of signal strengths
     let sum: i32 = signal_strengths.iter().sum();
     println!("Signals = {:?}", signal_strengths);
     println!("Sum of signal strengths: {}", sum);
