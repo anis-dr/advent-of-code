@@ -81,7 +81,6 @@ fn simulate_cpu(path: &Path) {
     for instruction in instruction_iter {
         cpu.program_counter = Some(*instruction);
         while cpu.program_counter.is_some() {
-            cpu.execute();
             global_cycle_counter += 1;
 
             if signal_index < signal_strengths.len()
@@ -91,6 +90,8 @@ fn simulate_cpu(path: &Path) {
                 signal_strengths[signal_index] *= cpu.x;
                 signal_index += 1;
             }
+
+            cpu.execute();
         }
     }
 
