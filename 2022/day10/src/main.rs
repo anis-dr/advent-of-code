@@ -87,6 +87,11 @@ fn simulate_cpu(path: &Path) {
     let mut signal_strengths = [20, 60, 100, 140, 180, 220];
     let mut signal_index = 0;
 
+    // Initialize the CRT screen
+    let mut screen = vec![vec!['.'; 40]; 6];
+    let mut laser_beam_row_position = 0;
+    let mut laser_beam_position = 0;
+
     // Execute each instruction in the list
     for instruction in instructions.iter() {
         // Set the current instruction in the CPU
@@ -96,6 +101,19 @@ fn simulate_cpu(path: &Path) {
         while cpu.current_instruction.is_some() {
             // Increment the global cycle counter
             global_cycle_counter += 1;
+
+            // If laser_beam_position is in range of x -+1 then draw a '#' on the screen at the current laser_beam_row_position
+            // if not then draw a '.' on the screen at the current laser_beam_row_position which is already done by default
+            if (cpu.x.saturating_sub(1)..=cpu.x.saturating_add(1)).contains(&laser_beam_position) {
+                screen[laser_beam_row_position][laser_beam_position as usize] = '#';
+            }
+
+            // Move the laser beam
+            laser_beam_position += 1;
+            if laser_beam_position == 40 {
+                laser_beam_position = 0;
+                laser_beam_row_position += 1;
+            }
 
             // Check if a signal needs to be modified
             if signal_index < signal_strengths.len()
@@ -109,6 +127,11 @@ fn simulate_cpu(path: &Path) {
             // Execute the current instruction
             cpu.execute();
         }
+    }
+
+    // Print the CRT screen content
+    for row in screen.iter() {
+        println!("{}", row.iter().collect::<String>());
     }
 
     // Calculate and display the sum of signal strengths
